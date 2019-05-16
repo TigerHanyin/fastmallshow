@@ -1,0 +1,2 @@
+# fastmallshow
+基于beego框架开发fastmallshow购物网站
