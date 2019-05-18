@@ -26,7 +26,7 @@
 					<span>|</span>
 					<a href="user_center_info.html">用户中心</a>
 					<span>|</span>
-					<a href="cart.html">我的购物车</a>
+					<a href="/user/ShowCart">我的购物车</a>
 					<span>|</span>
 					<a href="user_center_order.html">我的订单</a>
 				</div>
@@ -61,6 +61,7 @@
 
 	<div class="center_con clearfix">
 		<ul class="subnav fl">
+			<!----//show every goodsType by range --->
 		{{range .goodsTypes}}
             <li><a href="/goodsType?id={{.Id}}" class="{{.Logo}}">{{.Name}}</a></li>
 		{{end}}

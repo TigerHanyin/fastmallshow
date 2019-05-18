@@ -9,7 +9,7 @@ import (
 
 func init() {
 	//路由过滤
-	beego.InsertFilter("/user/",beego.BeforeExec,guolvFunc)
+	beego.InsertFilter("/user/*",beego.BeforeExec,guolvFunc)
 	beego.Router("/", &controllers.MainController{})
 	//用户注册
 	beego.Router("/register", &controllers.UserController{}, "get:ShowRegister;post:HandleRegister")
@@ -27,6 +27,11 @@ func init() {
 	//商品详情
 	beego.Router("/goodsDetail",&controllers.GoodsController{},"get:ShowDetail")
 	beego.Router("/goodsType",&controllers.GoodsController{},"get:ShowList")
+	beego.Router("/addCart",&controllers.CartController{},"post:HandellAddCart")
+	beego.Router("/user/ShowCart",&controllers.CartController{},"get:ShowCart")
+	beego.Router("/upCart",&controllers.CartController{},"post:HandellUpCart")
+	beego.Router("/deleteCart",&controllers.CartController{},"post:HandellDeleteCart")
+	beego.Router("/user/addOrder",&controllers.OderController{},"post:ShowOrder")
 }
 
 

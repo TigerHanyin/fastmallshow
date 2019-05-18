@@ -4,6 +4,7 @@ import (
 	"github.com/astaxie/beego"
 	"github.com/astaxie/beego/orm"
 	"pyg/pyg/models"
+	"math"
 )
 
 type GoodsController struct {
@@ -66,12 +67,15 @@ func (this *GoodsController) ShowIndex() {
 	this.TplName = "index.html"
 
 }
-func (this *GoodsController) ShowIndexSx(){
-	o := orm.NewOrm()
-	var goodsTypes []models.GoodsType
-	o.QueryTable("GoodsType").All(&goodsTypes)
-	this.Data["goodsTypes"] = goodsTypes
+func (this *GoodsController) ShowIndexSx() {
 
+	o := orm.NewOrm()
+	//show goodstypes
+	var goodsTypes []models.GoodsType
+	//find all goodstypes ->[]goodsType
+	o.QueryTable("GoodsType").All(&goodsTypes)
+	//send to index.html   & index.html recevie by {{.goodsType}}
+	this.Data["goodsTypes"] = goodsTypes
 
 	//轮播图
 	var goodsBanners []models.IndexGoodsBanner
@@ -100,44 +104,119 @@ func (this *GoodsController) ShowIndexSx(){
 	this.Data["goods"] = goods
 	this.TplName = "index_sx.html"
 }
-func(this*GoodsController)ShowDetail(){
-	id,err:=this.GetInt("Id")
-	if err!=nil{
+func (this *GoodsController) ShowDetail() {
+	id, err := this.GetInt("Id")
+	if err != nil {
 		beego.Error("商品下架")
-		this.Redirect("index_sx",302)
+		this.Redirect("index_sx", 302)
 		return
 	}
 	var goodsSKU models.GoodsSKU
 	var newGoods []models.GoodsSKU
-	o:=orm.NewOrm()
-o.QueryTable("GoodsSKU").RelatedSel("GoodsType","Goods").Filter("Id",id).All(&goodsSKU)
-qs:=o.QueryTable("GoodsSKU").RelatedSel("GoodsType").Filter("GoodsType__Name",goodsSKU.GoodsType.Name)
-qs.OrderBy("-Time").Limit(2,0).All(&newGoods)
-	this.Data["goodsSKU"]=goodsSKU
-	this.Data["newGoods"]=newGoods
-	this.TplName="detail.html"
+	o := orm.NewOrm()
+	o.QueryTable("GoodsSKU").RelatedSel("GoodsType", "Goods").Filter("Id", id).All(&goodsSKU)
+	qs := o.QueryTable("GoodsSKU").RelatedSel("GoodsType").Filter("GoodsType__Name", goodsSKU.GoodsType.Name)
+	qs.OrderBy("-Time").Limit(2, 0).All(&newGoods)
+	this.Data["goodsSKU"] = goodsSKU
+	this.Data["newGoods"] = newGoods
+	this.TplName = "detail.html"
 
 }
-func(this*GoodsController)ShowList(){
-	id,err:=this.GetInt("id")
-	if err!=nil{
+func PageEdit(pageCount, pageIndex int) []int {
+	var pages []int
+	if pageCount < 5 {
+		for i := 1; i <= pageCount; i++ {
+			pages = append(pages, i)
+		}
+	} else if pageIndex <= 5 {
+		for i := 1; i <= 5; i++ {
+			pages = append(pages, i)
+		}
+	} else if pageIndex >= pageCount-2 {
+		for i := pageCount - 4; i <= pageCount; i++ {
+			pages = append(pages, i)
+		}
+	} else {
+		for i := pageIndex - 2; i <= pageIndex+2; i++ {
+			pages = append(pages, i)
+		}
+	}
+
+	return pages
+
+}
+func (this *GoodsController) ShowList() {
+	o := orm.NewOrm()
+	//show goodstypes
+	var goodsTypes []models.GoodsType
+	//find all goodstypes ->[]goodsType
+	o.QueryTable("GoodsType").All(&goodsTypes)
+	//send to index.html   & index.html recevie by {{.goodsType}}
+	this.Data["goodsTypes"] = goodsTypes
+	//find the click type by Id
+	id, err := this.GetInt("id")
+	if err != nil {
 		beego.Error("类型不存在")
-		this.TplName="index_sx.html"
+		this.Layout = "llayout.html"
+		this.TplName = "index_sx.html"
 		return
 	}
-	o:=orm.NewOrm()
+	this.Data["id"] = id
+	//sendback Id to show in top of newgoodsshow
+	goodtype := o.QueryTable("GoodsType").Filter("Goodstype__Id", id)
+	//??????
+	this.Data["goodtype"] = goodtype
+
+	//recieve sort to rand goods
+	sort := this.GetString("sort")
+
 	//goods
 	var goods []models.GoodsSKU
 	//newgoods
 	var newgoods []models.GoodsSKU
-	qs:=o.QueryTable("GoodsSKU").RelatedSel("GoodsType").Filter("GoodsType__Id",id)
-	qs.All(&goods)
-	this.Data["goods"]=goods
-	//only 2 newest
-	qs.OrderBy("-Time").Limit(2,0).All(&newgoods)
-	this.Data["newgoods"]=newgoods
-	this.TplName="list.html"
-	//page recive
-	this.GetInt("")
+	//find goods by type through Id
+	qs := o.QueryTable("GoodsSKU").RelatedSel("GoodsType").Filter("GoodsType__Id", id)
 
+	//only 2 newest
+	qs.OrderBy("-Time").Limit(2, 0).All(&newgoods)
+	this.Data["newgoods"] = newgoods
+	this.Layout = "llayout.html"
+	this.TplName = "list.html"
+
+	//page recive
+	//pagecount = count/pagesize
+	count, _ := qs.Count()
+	pagesize := 1
+	pagecount := int(math.Ceil(float64(count) / float64(pagesize)))
+	pageindex, err := this.GetInt("pageindex")
+	if err != nil {
+		pageindex = 1
+	}
+	pages := PageEdit(pagecount, pageindex)
+	var prepage, nextpage int
+	if pageindex-1 < 0 {
+		prepage = 1
+	} else {
+		prepage = pageindex - 1
+	}
+	if pageindex+1 > pagecount {
+		nextpage = pagecount
+	} else {
+		nextpage = pageindex + 1
+	}
+
+	this.Data["pages"] = pages
+	this.Data["prepage"] = prepage
+	this.Data["nextpage"] = nextpage
+	qs = qs.Limit(pagesize, pagesize*(pageindex-1))
+	if sort == "" {
+		qs.All(&goods)
+
+	} else if sort == "price" {
+		qs.OrderBy("Price").All(&goods)
+	} else {
+		qs.OrderBy("-Sales").All(&goods)
+	}
+	this.Data["sort"] = sort
+	this.Data["goods"] = goods
 }
